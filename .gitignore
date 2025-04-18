@@ -1,0 +1,30 @@
+# Node dependencies
+**/node_modules/
+
+# Environment variables
+**/.env
+**/.env.*
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.local
+docker-compose.override.yml
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/*.tfplan
+
+# GitHub Actions artifact
+image-tag.txt
+
+# OS and IDE junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
