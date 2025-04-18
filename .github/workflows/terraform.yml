@@ -1,7 +1,10 @@
 name: CD - Deploy to EC2 with Terraform
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI - Build and Push Docker Image"]
+    types:
+      - completed
 
 jobs:
   terraform:
