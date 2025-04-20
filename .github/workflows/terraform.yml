@@ -1,11 +1,7 @@
 name: CD - Deploy to EC2 with Terraform
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - terraform/**
-      - .github/workflows/terraform.yml
+  workflow_dispatch:
 
 jobs:
   terraform:
