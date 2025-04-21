@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_security_group" "strapi_sg" {
-  name        = "strapi-sg"
+  name        = "strapi-sg-cicd"
   description = "Allow HTTP and SSH"
   vpc_id      = data.aws_vpc.default.id
 
