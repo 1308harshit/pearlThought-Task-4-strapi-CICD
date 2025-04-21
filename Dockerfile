@@ -1,17 +1,24 @@
-# Dockerfile
-FROM node:18-alpine
+# ✅ Base image
+FROM node:18
 
-# Set working directory inside container
-WORKDIR /app/strapi-app
+# ✅ Set working directory
+WORKDIR /app
 
-# Copy contents of the strapi-app folder into the container's working dir
-COPY ./strapi-app/ .
+# ✅ Copy package.json and package-lock.json (if available) to install dependencies
+COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# ✅ Install dependencies (production only for production environment)
+RUN npm install --production
 
-# Expose Strapi's default dev port
+# ✅ Copy the rest of the app (excluding files in .dockerignore)
+COPY . .
+
+# ✅ Expose Strapi port
 EXPOSE 1337
 
-# Start in development mode
-CMD ["npm", "run", "develop"]
+# ✅ Build the app (optional: use if you're customizing admin panel)
+RUN npm run build
+
+# ✅ Run Strapi in production mode (for production environment)
+CMD ["npm", "run", "start"]
+

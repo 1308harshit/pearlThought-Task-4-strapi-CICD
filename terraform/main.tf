@@ -1,42 +1,35 @@
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-1"
 }
-
-resource "aws_instance" "strapi_ec2" {
-  ami                         = var.ami_id
-  instance_type               = var.instance_type
-  iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
-  key_name                    = var.key_name
-
-  user_data = templatefile("${path.module}/user_data.sh", {
-    image_tag = var.image_tag
-  })
-
-  tags = {
-    Name = "StrapiServer"
-  }
-
-  vpc_security_group_ids = [aws_security_group.strapi_sg.id]
-}
-
 
 resource "aws_security_group" "strapi_sg" {
   name        = "strapi-sg"
-  description = "Allow HTTP and HTTPS"
+  description = "Allow HTTP and SSH"
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    from_port   = 1337
-    to_port     = 1337
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+  from_port   = 1337
+  to_port     = 1337
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  description = "Allow Strapi"
+}
+
 
   egress {
     from_port   = 0
@@ -46,27 +39,32 @@ resource "aws_security_group" "strapi_sg" {
   }
 }
 
-resource "aws_iam_role" "ssm_role" {
-  name = "ssm-role"
+resource "aws_instance" "strapi" {
+  ami                    = "ami-0e449927258d45bc4" 
+  instance_type          = "t2.medium"
+  key_name               = "strapi-cicd-key"               
+  associate_public_ip_address = true
+  vpc_security_group_ids = [aws_security_group.strapi_sg.id]
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole",
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      },
-      Effect = "Allow"
-    }]
-  })
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install docker -y
+              service docker start
+              usermod -a -G docker ec2-user
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
+              aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 118273046134.dkr.ecr.us-east-1.amazonaws.com
+              docker pull 118273046134.dkr.ecr.us-east-1.amazonaws.com/gbk-strapi-app:latest
+              docker run -d -p 80:1337 118273046134.dkr.ecr.us-east-1.amazonaws.com/gbk-strapi-app:latest
+              EOF
+
+  tags = {
+    Name = "Strapi-app"
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "ssm_attach" {
-  role       = aws_iam_role.ssm_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "ssm_profile" {
-  name = "ssm-instance-profile"
-  role = aws_iam_role.ssm_role.name
+data "aws_vpc" "default" {
+  default = true
 }
